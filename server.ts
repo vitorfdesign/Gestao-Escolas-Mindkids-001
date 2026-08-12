@@ -249,9 +249,16 @@ app.post('/api/school/:slug/confirm', (req, res) => {
   
   console.log(`[Google Sheets Webhook API] Gravando dados para a aba/escola "${escolaAtual || slug}" (slug: ${slug}).`);
 
-  const school = dbSchools[slug];
+  let school = dbSchools[slug];
   if (!school) {
-    return res.status(404).json({ error: `Escola não encontrada` });
+    school = {
+      slug,
+      name: escolaAtual || slug.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      status: 'Aberto',
+      dataLimite: '2026-12-05',
+      minima: confirmedQuantities || {}
+    };
+    dbSchools[slug] = school;
   }
 
   if (school.status === 'Concluido') {
