@@ -1,6 +1,6 @@
 import { School, LevelKey, LevelData, LEVELS } from './types';
 
-export const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzC4butaSzrEqT8XYUfSmS3vcHYki0WcpkmNdIa8ZlVGnij1ocjGlZgJKBw9Ekr0JL2/exec';
+export const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzOxqyO-PgP_mkedEAMT6xHnSrcv0WmSzpdZ8mXs1fVPEzeLGKYU52171HB97u1VSfm/exec';
 
 // Key alias mapping for incoming Google Apps Script JSON
 const keyAliases: Record<string, LevelKey> = {
