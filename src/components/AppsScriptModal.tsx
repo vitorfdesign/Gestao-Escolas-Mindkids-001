@@ -96,7 +96,7 @@ function doGet(e) {
 function doPost(e) {
   try {
     const postData = JSON.parse(e.postData.contents);
-    const slug = postData.slug;
+    const slug = postData.escolaSlug || postData.slug || postData.escola;
     const confirmedQuantities = postData.confirmedQuantities;
     const confirmedBy = postData.confirmedBy || "Gestor";
     

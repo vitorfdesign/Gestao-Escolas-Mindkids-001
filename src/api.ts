@@ -240,8 +240,9 @@ export async function confirmSchoolQuantities(
   const targetSlug = slug || 'algodao-doce';
   const formattedQuantities = mapQuantitiesToGas(confirmedQuantities);
 
-  const payload = {
+  const dados = {
     escola: escolaAtual || targetSlug,
+    escolaSlug: targetSlug,
     gestor: confirmedBy,
     cargo: confirmedRole,
     email: confirmedEmail || '',
@@ -255,12 +256,13 @@ export async function confirmSchoolQuantities(
 
   // 1. Post to Google Apps Script endpoint
   try {
+    console.log('Dados enviados ao servidor:', JSON.stringify(dados));
     const gasResponse = await fetch(GOOGLE_APPS_SCRIPT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=utf-8',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(dados),
       redirect: 'follow'
     });
 
