@@ -1,0 +1,6 @@
+{
+  "name": "Mindful School - Confirmador de Quantitativos",
+  "description": "Dashboard premium B2B para confirmação de quantitativos escolares de alunos e turmas com banco de dados integrado.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
