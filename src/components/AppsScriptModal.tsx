@@ -27,86 +27,65 @@ const LOG_SHEET_NAME = "Confirmacoes_Log";
 
 // GET REQUEST - Returns school details by slug
 function doGet(e) {
-  const slug = e.parameter.slug;
-  if (!slug) {
-    return createJsonResponse({ error: "Parâmetro 'slug' é obrigatório." }, 400);
-  }
-  
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const configSheet = spreadsheet.getSheetByName(CONFIG_SHEET_NAME);
-  if (!configSheet) {
-    return createJsonResponse({ error: "Aba '" + CONFIG_SHEET_NAME + "' não encontrada." }, 500);
-  }
-  
-  const data = configSheet.getDataRange().getValues();
-  const headers = data[0];
-  
-  // Find row matching the slug
-  let schoolRow = null;
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0] === slug) {
-      schoolRow = data[i];
-      break;
+  try {
+    const targetEscola = (e && e.parameter && (e.parameter.escola || e.parameter.slug)) || "algodao-doce";
+    
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    const configSheet = spreadsheet.getSheetByName(CONFIG_SHEET_NAME) || spreadsheet.getSheets()[0];
+    if (!configSheet) {
+      return createJsonResponse({ error: "Aba '" + CONFIG_SHEET_NAME + "' não encontrada." }, 500);
     }
-  }
-  
-  if (!schoolRow) {
-    return createJsonResponse({ error: "Escola com slug '" + slug + "' não cadastrada." }, 404);
-  }
-  
-  // Format response matching our frontend model
-  const school = {
-    slug: schoolRow[0],
-    name: schoolRow[1],
-    status: schoolRow[2],
-    dataLimite: formatDate(schoolRow[3]),
-    minima: {},
-    confirmed: {}
-  };
-  
-  // Map levels (g2, g3, g4, g5, 01ano, 02ano, 03ano, 04ano, 05ano, 06ano, 07ano, 08ano)
-  const levels = ["g2", "g3", "g4", "g5", "01ano", "02ano", "03ano", "04ano", "05ano", "06ano", "07ano", "08ano"];
-  
-  levels.forEach(level => {
-    // Determine column index for level minima
-    const colAlunosName = "Min_" + level + "_alunos";
-    const colTurmasName = "Min_" + level + "_turmas";
     
-    const idxAlunos = headers.indexOf(colAlunosName);
-    const idxTurmas = headers.indexOf(colTurmasName);
+    const data = configSheet.getDataRange().getValues();
+    const headers = data[0].map(function(h) { return String(h).trim(); });
     
-    school.minima[level] = {
-      alunos: idxAlunos !== -1 ? Number(schoolRow[idxAlunos]) || 0 : 0,
-      turmas: idxTurmas !== -1 ? Number(schoolRow[idxTurmas]) || 0 : 0
-    };
-  });
-  
-  // If completed, fetch logs or values
-  if (school.status === "Concluido") {
-    const logSheet = spreadsheet.getSheetByName(LOG_SHEET_NAME);
-    if (logSheet) {
-      const logData = logSheet.getDataRange().getValues();
-      school.confirmed = {};
-      
-      // Filter latest entries for this school slug
-      for (let j = logData.length - 1; j >= 1; j--) {
-        const logRow = logData[j];
-        if (logRow[1] === slug) {
-          const lvl = logRow[4];
-          const alu = Number(logRow[5]) || 0;
-          const tur = Number(logRow[6]) || 0;
-          
-          if (levels.indexOf(lvl) !== -1 && !school.confirmed[lvl]) {
-            school.confirmed[lvl] = { alunos: alu, turmas: tur };
-            school.confirmedBy = logRow[3];
-            school.updatedAt = logRow[0];
-          }
-        }
+    // Find row matching the slug or school name
+    let schoolRow = null;
+    for (let i = 1; i < data.length; i++) {
+      const slugVal = String(data[i][0] || "").toLowerCase().trim();
+      const nameVal = String(data[i][1] || "").toLowerCase().trim();
+      if (slugVal === targetEscola.toLowerCase() || nameVal === targetEscola.toLowerCase()) {
+        schoolRow = data[i];
+        break;
       }
     }
+    
+    if (!schoolRow && data.length > 1) {
+      schoolRow = data[1]; // Fallback to first row
+    }
+    
+    if (!schoolRow) {
+      return createJsonResponse({ error: "Escola com slug '" + targetEscola + "' não cadastrada." }, 404);
+    }
+    
+    const school = {
+      slug: targetEscola,
+      nome: schoolRow[1] || schoolRow[0] || "Escola",
+      status: schoolRow[2] || "Aberto",
+      dataLimite: formatDate(schoolRow[3]),
+      turmas: {}
+    };
+    
+    // List of supported levels
+    const levels = ["maternalBaby", "maternalI", "maternalII", "infantilI", "infantilII", "g3", "g4", "g5", "ano1", "ano2", "ano3", "ano4", "ano5", "ano6", "ano7", "ano8", "ano9", "em1", "em2", "em3"];
+    
+    levels.forEach(function(level) {
+      const idxAlunos = headers.indexOf("Min_" + level + "_alunos");
+      const idxTurmas = headers.indexOf("Min_" + level + "_turmas");
+      
+      const alu = idxAlunos !== -1 ? (Number(schoolRow[idxAlunos]) || 0) : 0;
+      const tur = idxTurmas !== -1 ? (Number(schoolRow[idxTurmas]) || 0) : 0;
+      
+      // Include level if there are valid numbers > 0
+      if (alu > 0 || tur > 0) {
+        school.turmas[level] = { alunos: alu, turmas: tur };
+      }
+    });
+    
+    return createJsonResponse(school);
+  } catch (err) {
+    return createJsonResponse({ error: err.toString() }, 500);
   }
-  
-  return createJsonResponse(school);
 }
 
 // POST REQUEST - Receives finalized school quantities and writes back to Sheet

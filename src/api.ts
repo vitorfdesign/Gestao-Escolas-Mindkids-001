@@ -7,25 +7,42 @@ const keyAliases: Record<string, LevelKey> = {
   maternalbaby: 'maternal_baby',
   maternal_baby: 'maternal_baby',
   maternal: 'maternal_baby',
+  maternali: 'g3',
+  maternal1: 'g3',
+  maternalii: 'g4',
+  maternal2: 'g4',
+  infantili: 'g4',
+  infantil1: 'g4',
+  infantilii: 'g5',
+  infantil2: 'g5',
   g3: 'g3',
   g4: 'g4',
   g5: 'g5',
+  ano1: '01ano',
   '1ano': '01ano',
   '01ano': '01ano',
+  ano2: '02ano',
   '2ano': '02ano',
   '02ano': '02ano',
+  ano3: '03ano',
   '3ano': '03ano',
   '03ano': '03ano',
+  ano4: '04ano',
   '4ano': '04ano',
   '04ano': '04ano',
+  ano5: '05ano',
   '5ano': '05ano',
   '05ano': '05ano',
+  ano6: '06ano',
   '6ano': '06ano',
   '06ano': '06ano',
+  ano7: '07ano',
   '7ano': '07ano',
   '07ano': '07ano',
+  ano8: '08ano',
   '8ano': '08ano',
   '08ano': '08ano',
+  ano9: '09ano',
   '9ano': '09ano',
   '09ano': '09ano',
   em1: '1serie',
@@ -69,7 +86,7 @@ export function mapQuantitiesToGas(quantities: Record<LevelKey, LevelData>) {
 
 // Helper to normalize any raw school JSON object into typed School interface
 export function normalizeSchoolData(data: any, slug: string): School {
-  const name = data.name || data.escola || data.nomeEscola || 'Escola Algodão Doce';
+  const name = data.nome || data.name || data.escola || data.nomeEscola || 'Escola Algodão Doce';
   const dataLimite = data.dataLimite || data.data_limite || '2026-12-05';
   const status = data.status === 'Concluido' || data.status === 'Concluído' ? 'Concluido' : 'Aberto';
   
@@ -85,13 +102,24 @@ export function normalizeSchoolData(data: any, slug: string): School {
     const mappedKey = keyAliases[cleanKey] || (rawKey as LevelKey);
     if (LEVELS.some(l => l.key === mappedKey)) {
       const item = rawTurmas[rawKey];
+      let alu = 0;
+      let tur = 0;
+
       if (item && typeof item === 'object') {
+        const rawAlu = item.alunos ?? item.qtdAlunos ?? 0;
+        const rawTur = item.turmas ?? item.qtdTurmas ?? 0;
+        alu = Number(rawAlu) || 0;
+        tur = Number(rawTur) || 0;
+      } else if (typeof item === 'number' || typeof item === 'string') {
+        alu = Number(item) || 0;
+        tur = alu > 0 ? 1 : 0;
+      }
+
+      if (alu > 0 || tur > 0) {
         minima[mappedKey] = {
-          alunos: Number(item.alunos ?? item.qtdAlunos ?? 0),
-          turmas: Number(item.turmas ?? item.qtdTurmas ?? 0),
+          alunos: (minima[mappedKey]?.alunos || 0) + alu,
+          turmas: (minima[mappedKey]?.turmas || 0) + tur,
         };
-      } else if (typeof item === 'number') {
-        minima[mappedKey] = { alunos: Number(item), turmas: 1 };
       }
     }
   }
@@ -109,9 +137,11 @@ export function normalizeSchoolData(data: any, slug: string): School {
       if (LEVELS.some(l => l.key === mappedKey)) {
         const item = rawConf[rawKey];
         if (item && typeof item === 'object') {
+          const alu = Number(item.alunos ?? item.qtdAlunos ?? 0) || 0;
+          const tur = Number(item.turmas ?? item.qtdTurmas ?? 0) || 0;
           confirmed![mappedKey] = {
-            alunos: Number(item.alunos ?? item.qtdAlunos ?? 0),
-            turmas: Number(item.turmas ?? item.qtdTurmas ?? 0),
+            alunos: (confirmed![mappedKey]?.alunos || 0) + alu,
+            turmas: (confirmed![mappedKey]?.turmas || 0) + tur,
           };
         }
       }
