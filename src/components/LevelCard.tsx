@@ -7,7 +7,7 @@ interface LevelCardProps {
   metadata: LevelMetadata;
   minima: LevelData;
   current: LevelData;
-  status: 'Aberto' | 'Concluido';
+  status: string;
   onValueChange: (field: 'alunos' | 'turmas', value: number) => void;
   imageUrl?: string;
   isLocked?: boolean;
@@ -22,7 +22,8 @@ export default function LevelCard({
   imageUrl,
   isLocked = false,
 }: LevelCardProps) {
-  const isAberto = status === 'Aberto' && !isLocked;
+  const lowerStatus = (status || '').toLowerCase().trim();
+  const isAberto = (lowerStatus === 'aberto' || lowerStatus === 'em aberto') && !isLocked;
   const isZeroAlunos = current.alunos <= 0;
   const isZeroTurmas = current.turmas <= 0;
 

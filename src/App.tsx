@@ -27,6 +27,62 @@ import AppsScriptModal from './components/AppsScriptModal';
 // Current system date for mock deadline comparison
 const SYSTEM_DATE = new Date('2026-07-02');
 
+// Phone number helper: supports landline (8 digits after DDD) and mobile (9 digits after DDD)
+const formatPhoneNumber = (value: string): string => {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (!digits) return '';
+  if (digits.length <= 2) return `(${digits}`;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
+// Helper to determine status badge presentation and state flags
+const getStatusInfo = (statusStr?: string, isExpiredByDate?: boolean) => {
+  const rawStatus = (statusStr || 'Aberto').trim();
+  const lower = rawStatus.toLowerCase();
+
+  const isConcludedState = 
+    lower === 'concluido' || 
+    lower === 'concluído' || 
+    lower === 'finalizado' || 
+    lower === 'confirmado';
+
+  const isExpiredState = 
+    lower === 'expirado' || 
+    lower === 'encerrado' || 
+    lower === 'prazo encerrado' || 
+    (!isConcludedState && isExpiredByDate);
+
+  if (isConcludedState) {
+    return {
+      label: rawStatus === 'Concluido' ? 'Concluído' : rawStatus,
+      bg: 'bg-green-50 text-green-700 border-green-200',
+      dot: 'bg-green-600',
+      isConcluded: true,
+      isExpired: false
+    };
+  }
+
+  if (isExpiredState) {
+    return {
+      label: rawStatus !== 'Aberto' ? rawStatus : 'Prazo Encerrado',
+      bg: 'bg-red-50 text-red-700 border-red-200',
+      dot: 'bg-red-600',
+      isConcluded: false,
+      isExpired: true
+    };
+  }
+
+  return {
+    label: rawStatus,
+    bg: 'bg-amber-50 text-amber-700 border-amber-200',
+    dot: 'bg-amber-600',
+    isConcluded: false,
+    isExpired: false
+  };
+};
+
 export default function App() {
   const [slug, setSlug] = useState<string>('algodao-doce');
   const [escolaAtual, setEscolaAtual] = useState<string>('algodao-doce');
@@ -87,8 +143,11 @@ export default function App() {
       
       // Initialize quantities
       const initialQuantities: Partial<Record<LevelKey, LevelData>> = {};
+      const lowerStatus = (data.status || '').toLowerCase().trim();
+      const isClosedStatus = lowerStatus === 'concluido' || lowerStatus === 'concluído' || lowerStatus === 'finalizado' || lowerStatus === 'confirmado';
+
       LEVELS.forEach(lvl => {
-        if (data.status === 'Concluido' && data.confirmed && data.confirmed[lvl.key]) {
+        if (isClosedStatus && data.confirmed && data.confirmed[lvl.key]) {
           initialQuantities[lvl.key] = { ...data.confirmed[lvl.key] };
         } else if (data.minima && data.minima[lvl.key]) {
           initialQuantities[lvl.key] = { ...data.minima[lvl.key] };
@@ -176,15 +235,18 @@ export default function App() {
   const modificationsCount = getModificationsCount();
 
   // Validate deadline rules
-  const isExpired = () => {
+  const isExpiredByDate = () => {
     if (!school) return false;
-    if (school.status === 'Concluido') return false;
-    
+    const lower = (school.status || '').toLowerCase().trim();
+    if (lower === 'concluido' || lower === 'concluído' || lower === 'finalizado' || lower === 'confirmado') {
+      return false;
+    }
     const limitDate = new Date(school.dataLimite);
     return SYSTEM_DATE > limitDate;
   };
 
-  const schoolIsExpired = isExpired();
+  const statusInfo = getStatusInfo(school?.status, isExpiredByDate());
+  const schoolIsExpired = statusInfo.isExpired;
 
   // Determine visible levels based strictly on initial contractual minima (school.minima)
   // Hide levels where initial contractual turmas <= 0 AND alunos <= 0
@@ -204,6 +266,17 @@ export default function App() {
     e.preventDefault();
     if (!slug || !confirmedBy || !confirmedRole || !confirmedEmail || !confirmedPhone || !confirmedAddress || !hasAcceptedTerms) return;
     
+    if (confirmedAddress.trim().length < 10) {
+      alert('Por favor, informe o endereço de entrega completo (com no mínimo 10 caracteres).');
+      return;
+    }
+
+    const digitsPhone = confirmedPhone.replace(/\D/g, '');
+    if (digitsPhone.length < 10) {
+      alert('Por favor, informe um número de telefone/celular válido com DDD.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const updatedSchool = await confirmSchoolQuantities(
@@ -292,17 +365,9 @@ export default function App() {
           {/* Right: Clean Status Badge */}
           <div className="flex items-center gap-3">
             {school && (
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 border ${
-                school.status === 'Concluido' 
-                  ? 'bg-green-50 text-green-700 border-green-200' 
-                  : schoolIsExpired
-                  ? 'bg-red-50 text-red-700 border-red-200'
-                  : 'bg-amber-50 text-amber-700 border-amber-200'
-              }`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${
-                  school.status === 'Concluido' ? 'bg-green-600' : schoolIsExpired ? 'bg-red-600' : 'bg-amber-600'
-                }`} />
-                {school.status === 'Concluido' ? 'Concluído' : schoolIsExpired ? 'Expirado' : 'Aberto'}
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 border ${statusInfo.bg}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
+                {statusInfo.label}
               </span>
             )}
           </div>
@@ -471,8 +536,8 @@ export default function App() {
 
             </div>
 
-            {/* Post-Confirmation Summary Card (Only visible when Status === Concluido) */}
-            {school?.status === 'Concluido' && (
+            {/* Post-Confirmation Summary Card (Visible when concluded/finalized) */}
+            {statusInfo.isConcluded && (
               <div 
                 id="receipt-header-banner"
                 className="bg-white border border-green-200 rounded-3xl overflow-hidden shadow-sm"
@@ -488,7 +553,7 @@ export default function App() {
                     </p>
                   </div>
                   <span className="font-mono text-[10px] bg-green-950 text-green-400 border border-green-800/80 px-3 py-1 rounded-full uppercase tracking-wider font-bold">
-                    Status da confirmação - Concluído
+                    Status da confirmação - {statusInfo.label}
                   </span>
                 </div>
 
@@ -551,13 +616,13 @@ export default function App() {
                   </span>
                 </h3>
                 <p className="text-xs text-neutral-500 mt-0.5">
-                  {school?.status === 'Concluido' 
+                  {statusInfo.isConcluded 
                     ? 'Visualização em Modo de Leitura. Quantitativos confirmados sem possibilidade de alteração.' 
                     : 'Ajuste os valores do número de turmas e alunos caso necessário.'}
                 </p>
               </div>
 
-              {school?.status === 'Concluido' && (
+              {statusInfo.isConcluded && (
                 <button
                   onClick={handleQuickReset}
                   className="text-xs text-neutral-500 hover:text-neutral-900 underline font-mono"
@@ -588,7 +653,7 @@ export default function App() {
             </div>
 
             {/* ==================== STICKY FOOTER SUMMARY BAR (ABERTO MODE ONLY) ==================== */}
-            {school?.status === 'Aberto' && (
+            {!statusInfo.isConcluded && !statusInfo.isExpired && (
               <div className="sticky bottom-6 left-0 right-0 bg-white/95 backdrop-blur-md border border-neutral-200/80 rounded-2xl shadow-[0_16px_36px_rgba(0,0,0,0.1)] p-5 md:p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-5 z-40 transition-all duration-300">
                 <div className="flex flex-wrap items-center gap-6">
                   
@@ -722,18 +787,19 @@ export default function App() {
                   />
                 </div>
 
-                {/* 4. Celular */}
+                {/* 4. Celular / Telefone */}
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 mb-1 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-neutral-400" /> Celular *
+                    <Phone className="w-3.5 h-3.5 text-neutral-400" /> Telefone / WhatsApp *
                   </label>
                   <input
                     type="tel"
                     required
-                    placeholder="(11) 99999-8888"
+                    maxLength={15}
+                    placeholder="(11) 99999-8888 ou (11) 3333-4444"
                     value={confirmedPhone}
-                    onChange={e => setConfirmedPhone(e.target.value)}
-                    className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900 transition-colors"
+                    onChange={e => setConfirmedPhone(formatPhoneNumber(e.target.value))}
+                    className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900 transition-colors font-mono"
                   />
                 </div>
 
@@ -745,11 +811,22 @@ export default function App() {
                   <textarea
                     required
                     rows={2}
-                    placeholder="Rua, número, complemento, bairro, cidade/UF e CEP"
+                    minLength={10}
+                    placeholder="Rua, número, complemento, bairro, cidade/UF e CEP (mínimo 10 caracteres)"
                     value={confirmedAddress}
                     onChange={e => setConfirmedAddress(e.target.value)}
-                    className="w-full border border-neutral-200 rounded-lg px-3 py-2.5 text-xs text-neutral-900 focus:outline-none focus:border-neutral-900 transition-colors resize-none"
+                    className={`w-full border rounded-lg px-3 py-2.5 text-xs text-neutral-900 focus:outline-none transition-colors resize-none ${
+                      confirmedAddress.length > 0 && confirmedAddress.trim().length < 10
+                        ? 'border-red-300 focus:border-red-500 bg-red-50/20'
+                        : 'border-neutral-200 focus:border-neutral-900'
+                    }`}
                   />
+                  {confirmedAddress.length > 0 && confirmedAddress.trim().length < 10 && (
+                    <p className="text-[11px] text-red-600 font-medium mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3 shrink-0" />
+                      <span>O endereço deve conter no mínimo 10 caracteres ({confirmedAddress.trim().length}/10).</span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Note */}
@@ -786,7 +863,15 @@ export default function App() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || !confirmedBy || !confirmedRole || !confirmedEmail || !confirmedPhone || !confirmedAddress || !hasAcceptedTerms}
+                  disabled={
+                    submitting || 
+                    !confirmedBy || 
+                    !confirmedRole || 
+                    !confirmedEmail || 
+                    confirmedPhone.replace(/\D/g, '').length < 10 || 
+                    confirmedAddress.trim().length < 10 || 
+                    !hasAcceptedTerms
+                  }
                   className="flex-1 py-3 text-xs font-semibold text-white bg-[#121212] hover:bg-neutral-800 rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {submitting ? (

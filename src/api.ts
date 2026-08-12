@@ -103,7 +103,7 @@ export function normalizeSchoolData(data: any, slug: string): School {
     (slug ? slug.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unidade Escolar');
 
   const dataLimite = data.dataLimite || data.data_limite || '2026-12-05';
-  const status = data.status === 'Concluido' || data.status === 'Concluído' ? 'Concluido' : 'Aberto';
+  const status = data.status ? String(data.status).trim() : 'Aberto';
   
   const rawTurmas = data.turmas || data.minima || data.quantidades || data.quantidadesContratuais || {};
   

@@ -31,7 +31,7 @@ export interface LevelData {
   turmas: number;
 }
 
-export type SchoolStatus = 'Aberto' | 'Concluido';
+export type SchoolStatus = string;
 
 export interface School {
   slug: string;
