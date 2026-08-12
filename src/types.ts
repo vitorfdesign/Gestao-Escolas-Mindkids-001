@@ -1,8 +1,9 @@
 export type LevelKey =
-  | 'maternal_baby'
-  | 'g3'
-  | 'g4'
-  | 'g5'
+  | 'maternalBaby'
+  | 'maternalI'
+  | 'maternalII'
+  | 'infantilI'
+  | 'infantilII'
   | '01ano'
   | '02ano'
   | '03ano'
@@ -48,7 +49,7 @@ export interface School {
 
 export const LEVELS: LevelMetadata[] = [
   { 
-    key: 'maternal_baby', 
+    key: 'maternalBaby', 
     label: 'Maternal baby', 
     category: 'Educação Infantil', 
     imageType: 'infantil', 
@@ -56,24 +57,32 @@ export const LEVELS: LevelMetadata[] = [
     imageUrl: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?auto=format&fit=crop&q=80&w=400'
   },
   { 
-    key: 'g3', 
-    label: 'G3 (3 anos)', 
+    key: 'maternalI', 
+    label: 'Maternal I', 
     category: 'Educação Infantil', 
     imageType: 'infantil', 
     description: 'Livro e materiais de apoio didático',
     imageUrl: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&q=80&w=400'
   },
   { 
-    key: 'g4', 
-    label: 'G4 (4 anos)', 
+    key: 'maternalII', 
+    label: 'Maternal II', 
+    category: 'Educação Infantil', 
+    imageType: 'infantil', 
+    description: 'Livro e materiais de apoio didático',
+    imageUrl: 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?auto=format&fit=crop&q=80&w=400'
+  },
+  { 
+    key: 'infantilI', 
+    label: 'Infantil I', 
     category: 'Educação Infantil', 
     imageType: 'infantil', 
     description: 'Livro e materiais de apoio didático',
     imageUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=400'
   },
   { 
-    key: 'g5', 
-    label: 'G5 (5 anos)', 
+    key: 'infantilII', 
+    label: 'Infantil II', 
     category: 'Educação Infantil', 
     imageType: 'infantil', 
     description: 'Livro e materiais de apoio didático',
