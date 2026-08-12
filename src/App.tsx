@@ -22,7 +22,6 @@ import {
 import { School, LevelKey, LevelData, LEVELS } from './types';
 import { getSchoolData, confirmSchoolQuantities, resetSchoolState } from './api';
 import LevelCard from './components/LevelCard';
-import AdminSheetEmulator from './components/AdminSheetEmulator';
 import AppsScriptModal from './components/AppsScriptModal';
 
 // Current system date for mock deadline comparison
@@ -310,14 +309,6 @@ export default function App() {
 
         </div>
       </header>
-
-      {/* ==================== MOCK DATABASE CONTROL PANEL (TESTING ONLY) ==================== */}
-      <AdminSheetEmulator 
-        currentSlug={slug}
-        onSelectSchool={navigateToSchool}
-        onSchoolUpdated={() => loadSchool(slug)}
-        onOpenAppsScript={() => setIsOpenAppsScript(true)}
-      />
 
       {/* Success Notification Toast */}
       {successToast && (
