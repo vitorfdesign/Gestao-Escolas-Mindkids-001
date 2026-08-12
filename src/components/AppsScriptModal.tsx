@@ -50,17 +50,21 @@ function doGet(e) {
       }
     }
     
-    if (!schoolRow && data.length > 1) {
-      schoolRow = data[1]; // Fallback to first row
-    }
-    
     if (!schoolRow) {
-      return createJsonResponse({ error: "Escola com slug '" + targetEscola + "' não cadastrada." }, 404);
+      const formattedName = targetEscola ? targetEscola.replace(/[-_]/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : "Unidade Escolar";
+      const school = {
+        slug: targetEscola,
+        nome: formattedName,
+        status: "Aberto",
+        dataLimite: "2026-12-05",
+        turmas: {}
+      };
+      return createJsonResponse(school);
     }
     
     const school = {
       slug: targetEscola,
-      nome: schoolRow[1] || schoolRow[0] || "Escola",
+      nome: schoolRow[1] || schoolRow[0] || targetEscola,
       status: schoolRow[2] || "Aberto",
       dataLimite: formatDate(schoolRow[3]),
       turmas: {}

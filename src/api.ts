@@ -91,7 +91,9 @@ export function mapQuantitiesToGas(quantities: Record<LevelKey, LevelData>) {
 
 // Helper to normalize any raw school JSON object into typed School interface
 export function normalizeSchoolData(data: any, slug: string): School {
-  const name =
+  const isSlugAlgodao = slug.toLowerCase().includes('algodao') || slug.toLowerCase().includes('algodão');
+
+  let candidateName: string | null =
     data.nome ||
     data.nomeEscola ||
     data.nome_escola ||
@@ -99,8 +101,18 @@ export function normalizeSchoolData(data: any, slug: string): School {
     data.schoolName ||
     data.unidadeEscolar ||
     data.unidade ||
-    (typeof data.escola === 'string' && data.escola.toLowerCase() !== slug.toLowerCase() ? data.escola : null) ||
-    (slug ? slug.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unidade Escolar');
+    (typeof data.escola === 'string' ? data.escola : null);
+
+  // If candidateName contains "Algodão" or "algodao" but the requested slug is NOT "algodao", discard candidateName
+  if (candidateName && typeof candidateName === 'string') {
+    const lowerCandidate = candidateName.toLowerCase();
+    if (!isSlugAlgodao && (lowerCandidate.includes('algodão') || lowerCandidate.includes('algodao'))) {
+      candidateName = null;
+    }
+  }
+
+  const formattedSlugName = slug ? slug.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unidade Escolar';
+  const name = candidateName || formattedSlugName;
 
   const dataLimite = data.dataLimite || data.data_limite || '2026-12-05';
   const status = data.status ? String(data.status).trim() : 'Aberto';

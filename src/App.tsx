@@ -83,9 +83,18 @@ const getStatusInfo = (statusStr?: string, isExpiredByDate?: boolean) => {
   };
 };
 
+const getInitialSlug = (): string => {
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    const param = params.get('escola') || params.get('slug');
+    if (param && param.trim()) return param.trim();
+  }
+  return 'algodao-doce';
+};
+
 export default function App() {
-  const [slug, setSlug] = useState<string>('algodao-doce');
-  const [escolaAtual, setEscolaAtual] = useState<string>('algodao-doce');
+  const [slug, setSlug] = useState<string>(getInitialSlug);
+  const [escolaAtual, setEscolaAtual] = useState<string>(getInitialSlug);
   const [school, setSchool] = useState<School | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,10 +117,10 @@ export default function App() {
   // Parse current URL parameter to set active school slug
   const parseUrlSlug = () => {
     const params = new URLSearchParams(window.location.search);
-    const escolaParam = params.get('escola');
-    if (escolaParam) {
-      setEscolaAtual(escolaParam);
-      setSlug(escolaParam);
+    const escolaParam = params.get('escola') || params.get('slug');
+    if (escolaParam && escolaParam.trim()) {
+      setEscolaAtual(escolaParam.trim());
+      setSlug(escolaParam.trim());
     } else {
       setEscolaAtual('algodao-doce');
       setSlug('algodao-doce');

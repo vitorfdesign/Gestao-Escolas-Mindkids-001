@@ -224,10 +224,29 @@ app.post('/api/admin/update-school', (req, res) => {
 // Fetch school data by slug
 app.get('/api/school/:slug', (req, res) => {
   const { slug } = req.params;
-  const school = dbSchools[slug];
+  let school = dbSchools[slug];
   
   if (!school) {
-    return res.status(404).json({ error: `Escola não encontrada com o slug: "${slug}"` });
+    const formattedName = slug ? slug.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Unidade Escolar';
+    school = {
+      slug,
+      name: formattedName,
+      status: 'Aberto',
+      dataLimite: '2026-12-05',
+      minima: {
+        maternalBaby: { alunos: 5, turmas: 1 },
+        maternalI: { alunos: 8, turmas: 1 },
+        maternalII: { alunos: 10, turmas: 1 },
+        infantilI: { alunos: 12, turmas: 1 },
+        infantilII: { alunos: 12, turmas: 1 },
+        '01ano': { alunos: 15, turmas: 1 },
+        '02ano': { alunos: 15, turmas: 1 },
+        '03ano': { alunos: 18, turmas: 1 },
+        '04ano': { alunos: 18, turmas: 1 },
+        '05ano': { alunos: 20, turmas: 1 },
+      }
+    };
+    dbSchools[slug] = school;
   }
   
   res.json(school);
